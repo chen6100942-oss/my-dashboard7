@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מרכז הבקרה של החיים שלך ✨</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800;900&family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>tailwind.config={theme:{extend:{fontFamily:{sans:['Heebo','Nunito','sans-serif']}}}}</script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        * { font-family: 'Heebo', 'Nunito', sans-serif; }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-6px); } }
+        @keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes bounce-in { 0% { transform: scale(0); } 50% { transform: scale(1.15); } 100% { transform: scale(1); } }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        .animate-slide-in-up { animation: slideInUp 0.5s ease-out forwards; }
+        .animate-bounce-in { animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        .card { background: #ffffff; border-radius: 1.25rem; border: 1px solid rgba(0,0,0,0.04); box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 20px rgba(0,0,0,0.03); transition: all 0.3s ease; }
+        .card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.06), 0 8px 30px rgba(0,0,0,0.05); transform: translateY(-2px); }
+        .soft-bg { background: linear-gradient(135deg, #fafbff 0%, #f0f4ff 30%, #fdf2f8 60%, #faf5ff 100%); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .gradient-text { -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .pill { display: inline-flex; align-items: center; gap: 0.375rem; padding: 0.2rem 0.65rem; border-radius: 9999px; font-size: 0.65rem; font-weight: 700; }
+    </style>
+</head>
+<body class="soft-bg">
+<div id="root"></div>
+<script type="text/babel">
+    const firebaseConfig = {
+        apiKey: "AIzaSyDT8--XTz8pTKPGcU0IRsbfqIKBIIZsN_M",
+        authDomain: "my-dashboard-61c28.firebaseapp.com",
+        projectId: "my-dashboard-61c28",
+        storageBucket: "my-dashboard-61c28.firebasestorage.app",
+        messagingSenderId: "393110790524",
+        appId: "1:393110790524:web:59160ee8fad58711ba44f9"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const { useState, useEffect } = React;
+    const { createRoot } = ReactDOM;
+
+    const Icon = ({ name, size = 24, className = "", ...props }) => {
+        useEffect(() => { lucide.createIcons(); }, []);
+        return React.createElement('i', { 'data-lucide': name, className, style: { width: size, height: size }, ...props });
+    };
+
+    const LoginScreen = () => {
+        const [loading, setLoading] = useState(false);
+        const [error, setError] = useState('');
+        const signInWithGoogle = async () => {
+            setLoading(true); setError('');
+            try { await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+            catch (err) { setError('שגיאה בהתחברות. נסי שוב.'); }
+            setLoading(false);
+        };
+        return (
+            <div className="min-h-screen soft-bg flex items-center justify-center p-4">
+                <div className="card max-w-md w-full p-8 text-center animate-slide-in-up">
+                    <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center"><span className="text-3xl">✨</span></div>
+                    <h1 className="text-3xl font-extrabold mb-2 bg-gradient-to-r from-violet-600 via-pink-500 to-amber-500 gradient-text">מרכז הבקרה של החיים שלך</h1>
+                    <p className="text-slate-500 mb-8">התחברי כדי להתחיל לעבוד על היעדים שלך</p>
+                    {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">{error}</div>}
+                    <button onClick={signInWithGoogle} disabled={loading} className="w-full px-6 py-3.5 bg-white border-2 border-slate-200 hover:border-violet-400 rounded-xl font-bold text-slate-700 transition-all flex items-center justify-center gap-3 shadow-sm hover:shadow-md disabled:opacity-50">
+                        {loading ? <span>מתחבר...</span> : (<><svg className="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg><span>התחברות עם Google</span></>)}
+                    </button>
+                    <p className="mt-6 text-xs text-slate-400">🔒 הנתונים שלך מאובטחים ופרטיים לחלוטין</p>
+                </div>
+            </div>
+        );
+    };
+
+    const App = () => {
+        // ============================================================
+        // THE FIX: ALL useState/useEffect HOOKS BEFORE ANY EARLY RETURN
+        // This was the cause of React error #310
+        // ============================================================
+        const [user, setUser] = useState(null);
+        const [loading, setLoading] = useState(true);
+        const [activeTab, setActiveTab] = useState('home');
+        const [showConfetti, setShowConfetti] = useState(false);
+        const [saveNotification, setSaveNotification] = useState(false);
+        const [tabs, setTabs] = useState([
+            { id: 'home', name: 'דף הבית', icon: 'home', color: 'violet' },
+            { id: 'tasks', name: 'משימות ופרויקטים', icon: 'list-todo', color: 'blue' },
+            { id: 'schedule', name: 'לוח זמנים יומי', icon: 'calendar-clock', color: 'amber' },
+            { id: 'metrics', name: 'מדדי הצלחה', icon: 'trending-up', color: 'emerald' },
+            { id: 'goals', name: 'יעדים לפי תחומים', icon: 'target', color: 'purple' },
+            { id: 'gantt', name: 'לוח שנה', icon: 'calendar', color: 'cyan' },
+            { id: 'future-self', name: 'אני העתידית', icon: 'sparkles', color: 'rose' },
+            { id: 'mindset', name: 'Mindset', icon: 'brain', color: 'purple' },
+            { id: 'ideas', name: 'רעיונות', icon: 'lightbulb', color: 'yellow' },
+            { id: 'resources', name: 'משאבים', icon: 'link', color: 'indigo' },
+            { id: 'archive', name: 'ארכיון', icon: 'archive', color: 'slate' }
+        ]);
+        const [newTabName, setNewTabName] = useState('');
+        const [newTabIcon, setNewTabIcon] = useState('star');
+        const [newTabColor, setNewTabColor] = useState('violet');
+        const [editingTab, setEditingTab] = useState(null);
+        const [searchQuery, setSearchQuery] = useState('');
+        const [searchResults, setSearchResults] = useState([]);
+        const [domains, setDomains] = useState([
+            { id: 'd1', value: 'general', emoji: '🌍', label: 'כללי' },
+            { id: 'd2', value: 'project-graduation', emoji: '🎓', label: 'פרויקט גמר' },
+            { id: 'd3', value: 'book-publishing', emoji: '📚', label: 'הוצאת ספר לאור' },
+            { id: 'd4', value: 'writing', emoji: '✍️', label: 'כתיבה' },
+            { id: 'd5', value: 'community', emoji: '📱', label: 'יצירת קהילה' },
+            { id: 'd6', value: 'finance', emoji: '💰', label: 'פיננסי' },
+            { id: 'd7', value: 'health', emoji: '⚖️', label: 'בריאותי' },
+            { id: 'd8', value: 'inside-out', emoji: '✨', label: 'עסק INSIDE OUT' }
+        ]);
+        const [newDomainEmoji, setNewDomainEmoji] = useState('');
+        const [newDomainLabel, setNewDomainLabel] = useState('');
+        const [dailySchedule, setDailySchedule] = useState([
+            { id: 's1', time: '05:30–06:00', activity: 'טקס בוקר כולל שתיית מים וקפה', domain: 'גוף ונפש', note: '', type: 'morning', completed: false },
+            { id: 's2', time: '06:30–07:30', activity: 'זמן עם רפאלי – ארוחת בוקר, התארגנות לגן', domain: 'משפחה', note: '', type: 'family', completed: false },
+            { id: 's3', time: '07:30–08:00', activity: 'פעילות גופנית (הליכה/ריצה/כושר)', domain: 'גוף ונפש', note: '', type: 'fitness', completed: false },
+            { id: 's4', time: '08:00–12:00', activity: 'עבודה עמוקה 1: פרויקט גמר / ספר', domain: 'אדריכלות וספר', note: '', type: 'work', completed: false },
+            { id: 's5', time: '12:00–13:00', activity: 'ארוחת צהריים בריאה + מים', domain: 'גוף ונפש', note: '', type: 'noon', completed: false },
+            { id: 's6', time: '13:00–15:30', activity: 'עבודה עמוקה 2: תוכן (רילס/פוסטים)', domain: 'כללי', note: '', type: 'work', completed: false },
+            { id: 's7', time: '15:30–16:00', activity: '', domain: 'כללי', note: '', type: 'general', completed: false },
+            { id: 's8', time: '16:00–18:00', activity: 'משימות גמישות (פיננסי, זוגיות, קריאה)', domain: 'גמיש', note: '', type: 'general', completed: false },
+            { id: 's9', time: '18:00–19:00', activity: 'הליכה/משחק עם רפאלי', domain: 'משפחה', note: '', type: 'family', completed: false },
+            { id: 's10', time: '19:00–20:00', activity: 'ארוחת ערב משפחתית', domain: 'משפחה', note: '', type: 'family', completed: false },
+            { id: 's11', time: '20:00–21:00', activity: 'זוגיות: יין + שיחה עומק', domain: 'משפחה', note: '', type: 'family', completed: false },
+            { id: 's12', time: '21:00–22:00', activity: 'סגירת יום: דשבורד, רפלקציה, קריאה', domain: 'כללי', note: '', type: 'general', completed: false },
+        ]);
+        const [successMetrics, setSuccessMetrics] = useState([
+            { id: 'm1', domain: 'פיננסי', daily: 'הכנסה יומית?', weekly: 'הכנסה שבועית', monthly: '50K+ נטו' },
+            { id: 'm2', domain: 'גוף ונפש', daily: '✓ טקס בוקר, תנועה, אוכל בריא', weekly: 'ירידה במשקל?', monthly: '80% ימים מלאים' },
+            { id: 'm3', domain: 'משפחה', daily: '✓ זמן רפאלי, זוגיות', weekly: 'דייט שבועי', monthly: '20 שעות איכות' },
+            { id: 'm4', domain: 'אדריכלות וספר', daily: 'שעות עבודה על פרויקט גמר', weekly: 'התקדמות %', monthly: 'הגשה עד סוף 2026' },
+            { id: 'm5', domain: 'תוכן', daily: '✓ תוכן יומי', weekly: 'עוקבים חדשים', monthly: '1K+ עוקבים חדשים' },
+        ]);
+        const [domainGoals, setDomainGoals] = useState([
+            { id: 'dg1', title: 'הוצאת הספר לאור', emoji: '📚', color: 'from-blue-500 to-cyan-500', points: [{ id: 'p1', label: 'יעד קרוב', text: 'סיום עריכה ל-120,000 מילים' }, { id: 'p2', label: 'יעד בינוני', text: 'שליחה לעורכת מקצועית' }, { id: 'p3', label: 'יעד רחוק', text: 'פרסום הספר - יוני 2027' }] },
+            { id: 'dg2', title: 'פרויקט גמר באדריכלות', emoji: '🎓', color: 'from-violet-500 to-purple-500', points: [{ id: 'p1', label: 'יעד קרוב', text: 'שיחה עם נדב + תוכנית עבודה' }, { id: 'p2', label: 'יעד בינוני', text: 'השלמת 50% - מרץ 2026' }, { id: 'p3', label: 'יעד רחוק', text: 'הגשה וקבלת רישיון - אפריל-מאי 2026' }] },
+            { id: 'dg4', title: 'יוצרת תוכן ברשתות', emoji: '📱', color: 'from-pink-500 to-rose-500', current: '160 עוקבים', points: [{ id: 'p1', label: 'יעד קרוב', text: '500 עוקבים (פברואר)' }, { id: 'p2', label: 'יעד בינוני', text: '5,000 עוקבים (יוני)' }, { id: 'p3', label: 'יעד רחוק', text: '500,000 עוקבים' }] },
+        ]);
+        const [newTaskText, setNewTaskText] = useState('');
+        const [newTaskDomain, setNewTaskDomain] = useState('general');
+        const [newTaskDueDate, setNewTaskDueDate] = useState('');
+        const [newProjectTitle, setNewProjectTitle] = useState('');
+        const [newProjectEmoji, setNewProjectEmoji] = useState('✨');
+        const [newProjectDueDate, setNewProjectDueDate] = useState('');
+        const [newProjectDomain, setNewProjectDomain] = useState('general');
+        const [newProjectColor, setNewProjectColor] = useState('from-violet-500 to-purple-500');
+        const [newResourceTitle, setNewResourceTitle] = useState('');
+        const [newResourceUrl, setNewResourceUrl] = useState('');
+        const [newResourceDomain, setNewResourceDomain] = useState('general');
+        const [addingTaskToProject, setAddingTaskToProject] = useState(null);
+        const [projects, setProjects] = useState([
+            { id: 'p1', title: 'הגשת פרויקט גמר באדריכלות', gradient: 'from-violet-500 to-purple-500', color: 'from-violet-500 to-purple-500', emoji: '🎓', startMonth: 1, endMonth: 5, showOnHome: true },
+            { id: 'p2', title: 'להוציא את הספר שלי לאור', gradient: 'from-blue-500 to-cyan-500', color: 'from-blue-500 to-cyan-500', emoji: '📚', startMonth: 4, endMonth: 12, showOnHome: true },
+            { id: 'p3', title: 'יצירת קהילה / יוצרת תוכן', gradient: 'from-pink-500 to-rose-500', color: 'from-pink-500 to-rose-500', emoji: '📱', startMonth: 2, endMonth: 12, showOnHome: true },
+            { id: 'p4', title: 'לרדת 20 ק"ג', gradient: 'from-rose-500 to-pink-600', color: 'from-rose-500 to-pink-600', emoji: '⚖️', startMonth: 1, endMonth: 10, showOnHome: false },
+            { id: 'p5', title: 'תכנון בית מש\' שוורץ', gradient: 'from-emerald-500 to-teal-500', color: 'from-emerald-500 to-teal-500', emoji: '🏗️', startMonth: 1, endMonth: 3, showOnHome: false },
+        ]);
+        const [tasks, setTasks] = useState([]);
+        const [resources, setResources] = useState([
+            { id: 'r1', title: 'השראה לאדריכלות מודרנית', url: 'https://www.archdaily.com', projectId: 'p1', completed: true, emoji: '🏗️' },
+            { id: 'r2', title: 'רפרנסים לעיצוב פוסטים', url: 'https://www.instagram.com', projectId: 'p3', completed: false, emoji: '📱' },
+        ]);
+        const [morningRitual, setMorningRitual] = useState([
+            { id: 'm1', text: 'מדיטציה 🧘‍♀️', completed: false },
+            { id: 'm2', text: 'דפי בוקר 📝', completed: false },
+            { id: 'm3', text: 'כתיבת הודיות 🙏', completed: false },
+            { id: 'm4', text: 'מנטרות חיוביות ✨', completed: false },
+            { id: 'm5', text: 'תכנון היום 📅', completed: false },
+            { id: 'm6', text: '3 משימות חשובות 🎯', completed: false },
+        ]);
+        const [gameChangers, setGameChangers] = useState([
+            { id: 'gc1', text: '', placeholder: 'משימת זהב 1 🥇' },
+            { id: 'gc2', text: '', placeholder: 'משימת זהב 2 🥈' },
+            { id: 'gc3', text: '', placeholder: 'משימת זהב 3 🥉' },
+        ]);
+        const [morningRitualTitle, setMorningRitualTitle] = useState('טקס בוקר');
+        const [morningRitualEmoji, setMorningRitualEmoji] = useState('☀️');
+        const [gameChangersTitle, setGameChangersTitle] = useState('GAME CHANGERS');
+        const [gameChangersEmoji, setGameChangersEmoji] = useState('⚡');
+        const [editingMorningTitle, setEditingMorningTitle] = useState(false);
+        const [editingGameChangersTitle, setEditingGameChangersTitle] = useState(false);
+        const [archive, setArchive] = useState([]);
+        const [newGoalTitle, setNewGoalTitle] = useState('');
+        const [newGoalEmoji, setNewGoalEmoji] = useState('🎯');
+        const [newGoalColor, setNewGoalColor] = useState('from-violet-500 to-purple-500');
+        const [ideas, setIdeas] = useState([]);
+        const [newIdeaText, setNewIdeaText] = useState('');
+        const [newIdeaColor, setNewIdeaColor] = useState('yellow');
+        const [ideasFilter, setIdeasFilter] = useState('all');
+        const [calendarView, setCalendarView] = useState('month');
+        const [currentMonth, setCurrentMonth] = useState(2);
+        const [currentYear, setCurrentYear] = useState(2026);
+        const [selectedDate, setSelectedDate] = useState(null);
+        const [dayScheduleTasks, setDayScheduleTasks] = useState({});
+        const [mindsetEntries, setMindsetEntries] = useState([]);
+        const [newMindsetText, setNewMindsetText] = useState('');
+        const [futureSelfEntries, setFutureSelfEntries] = useState([]);
+        const [newFutureSelfText, setNewFutureSelfText] = useState('');
+        const [futureSelfFiles, setFutureSelfFiles] = useState([]);
+
+        // Effects - ALSO before any return
+        useEffect(() => {
+            const unsubscribe = auth.onAuthStateChanged((u) => { setUser(u); setLoading(false); });
+            return () => unsubscribe();
+        }, []);
+
+        useEffect(() => {
+            if (user) { loadAllData(); }
+        }, [user?.uid]);
+
+        useEffect(() => { lucide.createIcons(); }, []);
+
+        // ============================================================
+        // CONDITIONAL RETURNS ARE NOW SAFE (all hooks are above)
+        // ============================================================
+        if (loading) {
+            return (
+                <div className="min-h-screen soft-bg flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 animate-pulse"></div>
+                        <p className="text-slate-500 font-medium">טוען...</p>
+                    </div>
+                </div>
+            );
+        }
+
+        if (!user) { return <LoginScreen />; }
+
+        // ============================================================
+        // HELPER FUNCTIONS (no hooks below)
+        // ============================================================
+        const months = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+        const israeliHolidays = {'2026-03-05':'🎭 פורים','2026-04-13':'🍷 ערב פסח','2026-04-14':'🫓 פסח','2026-04-20':'🫓 שביעי של פסח','2026-05-03':'🇮🇱 יום העצמאות','2026-05-24':'📖 שבועות','2026-09-14':'🍎 ראש השנה','2026-09-23':'🕊️ יום כיפור','2026-09-28':'🏕️ סוכות','2026-10-05':'📖 שמחת תורה','2026-12-18':'🕎 חנוכה'};
+        const getDayOfWeek = (y, m, d) => new Date(y, m-1, d).getDay();
+        const getDaysInMonth = (y, m) => new Date(y, m, 0).getDate();
+        const getFirstDayOfMonth = (y, m) => new Date(y, m-1, 1).getDay();
+        const typeColor = (t) => ({morning:'#f59e0b',work:'#6366f1',noon:'#10b981',fitness:'#f43f5e',family:'#ec4899',general:'#64748b'}[t]||'#64748b');
+
+        const saveAllData = async () => {
+            if (!user) return;
+            try {
+                await db.collection('users').doc(user.uid).set({ data: { tabs, projects, tasks, resources, morningRitual, gameChangers, dailySchedule, ideas, domains, domainGoals, successMetrics, morningRitualTitle, morningRitualEmoji, gameChangersTitle, gameChangersEmoji, archive, mindsetEntries, futureSelfEntries, futureSelfFiles, dayScheduleTasks, timestamp: new Date().toISOString() } });
+                setSaveNotification(true); setTimeout(() => setSaveNotification(false), 3000);
+            } catch (error) { alert('שגיאה בשמירת הנתונים'); }
+        };
+
+        const loadAllData = async () => {
+            if (!user) return;
+            try {
+                const doc = await db.collection('users').doc(user.uid).get();
+                if (doc.exists) {
+                    const d = doc.data().data;
+                    if (d.tabs) setTabs(d.tabs); if (d.projects) setProjects(d.projects); if (d.tasks) setTasks(d.tasks);
+                    if (d.resources) setResources(d.resources); if (d.morningRitual) setMorningRitual(d.morningRitual);
+                    if (d.gameChangers) setGameChangers(d.gameChangers); if (d.dailySchedule) setDailySchedule(d.dailySchedule);
+                    if (d.ideas) setIdeas(d.ideas); if (d.domains) setDomains(d.domains); if (d.domainGoals) setDomainGoals(d.domainGoals);
+                    if (d.successMetrics) setSuccessMetrics(d.successMetrics);
+                    if (d.morningRitualTitle) setMorningRitualTitle(d.morningRitualTitle);
+                    if (d.morningRitualEmoji) setMorningRitualEmoji(d.morningRitualEmoji);
+                    if (d.gameChangersTitle) setGameChangersTitle(d.gameChangersTitle);
+                    if (d.gameChangersEmoji) setGameChangersEmoji(d.gameChangersEmoji);
+                    if (d.archive) setArchive(d.archive);
+                    if (d.mindsetEntries) setMindsetEntries(d.mindsetEntries);
+                    if (d.futureSelfEntries) setFutureSelfEntries(d.futureSelfEntries);
+                    if (d.futureSelfFiles) setFutureSelfFiles(d.futureSelfFiles);
+                    if (d.dayScheduleTasks) setDayScheduleTasks(d.dayScheduleTasks);
+                }
+            } catch (error) { console.error('Error loading data:', error); }
+        };
+
+        const calculateProgress = (projectId) => {
+            const combined = [...tasks.filter(t => t.projectId === projectId), ...resources.filter(r => r.projectId === projectId)];
+            if (combined.length === 0) return 0;
+            return Math.round((combined.filter(item => item.completed).length / combined.length) * 100);
+        };
+
+        const fire = () => { setShowConfetti(true); setTimeout(() => setShowConfetti(false), 1500); };
+        const addToArchive = (text, type) => { const now = new Date(); setArchive(prev => [{ id: `a${Date.now()}`, text, type, date: now.toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: 'numeric' }), time: now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) }, ...prev]); };
+        const toggleTask = (id) => { const task = tasks.find(t => t.id === id); if (task && !task.completed) { fire(); addToArchive(task.text, 'task'); setTasks(prev => prev.filter(t => t.id !== id)); } };
+        const toggleResource = (id) => setResources(prev => prev.map(r => { if (r.id === id) { if (!r.completed) { fire(); addToArchive(r.title, 'resource'); } return {...r, completed: !r.completed}; } return r; }));
+        const toggleItem = (list, setter, id) => setter(prev => prev.map(item => { if (item.id === id) { if (!item.completed) fire(); return {...item, completed: !item.completed}; } return item; }));
+        const archiveGameChanger = (gc) => { if (gc.text.trim()) addToArchive(gc.text, 'gamechanger'); };
+        const addGameChanger = () => setGameChangers(prev => [...prev, { id: `gc${Date.now()}`, text: '', placeholder: `משימת זהב ${prev.length + 1}` }]);
+        const deleteGameChanger = (id) => { const gc = gameChangers.find(g => g.id === id); if (gc && gc.text.trim()) addToArchive(gc.text, 'gamechanger'); setGameChangers(prev => prev.filter(g => g.id !== id)); };
+        const updateGameChanger = (id, text) => setGameChangers(prev => prev.map(g => g.id === id ? {...g, text} : g));
+        const clearArchive = () => setArchive([]);
+        const restoreFromArchive = (item) => {
+            if (item.type === 'task') setTasks(prev => [...prev, { id: `t${Date.now()}`, text: item.text, projectId: null, completed: false }]);
+            else if (item.type === 'idea') setIdeas(prev => [...prev, { id: `idea${Date.now()}`, text: item.text, color: 'yellow', date: new Date().toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: 'numeric' }) }]);
+            else if (item.type === 'gamechanger') setGameChangers(prev => { const emptyIndex = prev.findIndex(gc => !gc.text.trim()); return emptyIndex !== -1 ? prev.map((gc, i) => i === emptyIndex ? {...gc, text: item.text} : gc) : prev; });
+            setArchive(prev => prev.filter(a => a.id !== item.id));
+        };
+        const addNewTask = () => { if (!newTaskText.trim()) return; setTasks(prev => [...prev, { id: `t${Date.now()}`, text: newTaskText, projectId: newTaskDomain === 'general' ? null : newTaskDomain, completed: false, dueDate: newTaskDueDate }]); setNewTaskText(''); setNewTaskDomain('general'); setNewTaskDueDate(''); };
+        const addNewProject = () => { if (!newProjectTitle.trim()) return; const dueMonth = newProjectDueDate ? new Date(newProjectDueDate).getMonth()+1 : 12; setProjects(prev => [...prev, { id: `p${Date.now()}`, title: newProjectTitle, color: newProjectColor, gradient: newProjectColor, emoji: newProjectEmoji, startMonth: new Date().getMonth()+1, endMonth: dueMonth, showOnHome: false, dueDate: newProjectDueDate, domain: newProjectDomain }]); setNewProjectTitle(''); setNewProjectEmoji('✨'); setNewProjectDueDate(''); setNewProjectDomain('general'); setNewProjectColor('from-violet-500 to-purple-500'); };
+        const addNewResource = () => { if (!newResourceTitle.trim() || !newResourceUrl.trim()) return; setResources(prev => [...prev, { id: `r${Date.now()}`, title: newResourceTitle, url: newResourceUrl, projectId: newResourceDomain === 'general' ? null : newResourceDomain, completed: false, emoji: '🔗' }]); setNewResourceTitle(''); setNewResourceUrl(''); setNewResourceDomain('general'); };
+        const deleteResource = (id) => { const r = resources.find(r => r.id === id); if (r) { addToArchive(r.title, 'resource'); setResources(prev => prev.filter(r => r.id !== id)); } };
+        const deleteProject = (projectId) => { if (confirm('למחוק את הפרויקט?')) { const p = projects.find(p => p.id === projectId); if (p) addToArchive(p.title, 'project'); setTasks(prev => prev.map(t => t.projectId === projectId ? {...t, projectId: null} : t)); setProjects(prev => prev.filter(p => p.id !== projectId)); } };
+        const addTaskToProject = (projectId) => { if (!newTaskText.trim()) return; setTasks(prev => [...prev, { id: `t${Date.now()}`, text: newTaskText, projectId, completed: false, dueDate: newTaskDueDate || '' }]); setNewTaskText(''); setNewTaskDueDate(''); setAddingTaskToProject(null); };
+        const addMorningRitualItem = () => setMorningRitual(prev => [...prev, { id: `m${Date.now()}`, text: 'פריט חדש', completed: false }]);
+        const updateMorningRitualText = (id, text) => setMorningRitual(prev => prev.map(item => item.id === id ? {...item, text} : item));
+        const deleteMorningRitualItem = (id) => setMorningRitual(prev => prev.filter(item => item.id !== id));
+        const updateScheduleActivity = (id, v) => setDailySchedule(p => p.map(s => s.id===id?{...s,activity:v}:s));
+        const updateScheduleNote = (id, v) => setDailySchedule(p => p.map(s => s.id===id?{...s,note:v}:s));
+        const updateScheduleTime = (id, v) => setDailySchedule(p => p.map(s => s.id===id?{...s,time:v}:s));
+        const toggleScheduleItem = (id) => setDailySchedule(p => p.map(s => s.id===id?{...s,completed:!s.completed}:s));
+        const deleteScheduleItem = (id) => setDailySchedule(p => p.filter(s => s.id !== id));
+        const saveScheduleToArchive = () => { const now = new Date(); const dateStr = now.toLocaleDateString('he-IL', { day: 'numeric', month: 'long', year: 'numeric' }); setArchive(prev => [{ id: `schedule-${Date.now()}`, text: `לו"ז יומי - ${dateStr}`, type: 'schedule', date: dateStr, time: now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }), scheduleData: dailySchedule.map(s => ({...s})) }, ...prev]); };
+        const updateMetricField = (id, f, v) => setSuccessMetrics(p => p.map(m => m.id===id?{...m,[f]:v}:m));
+        const addMetricRow = () => setSuccessMetrics(p => [...p, {id:`m${Date.now()}`,domain:'תחום חדש',daily:'',weekly:'',monthly:''}]);
+        const removeMetricRow = (id) => setSuccessMetrics(p => p.filter(m => m.id!==id));
+        const updateGoalTitle = (gid, v) => setDomainGoals(p => p.map(g => g.id===gid?{...g,title:v}:g));
+        const updateGoalCurrent = (gid, v) => setDomainGoals(p => p.map(g => g.id===gid?{...g,current:v}:g));
+        const updateGoalPoint = (gid, pid, v) => setDomainGoals(p => p.map(g => g.id===gid?{...g,points:g.points.map(pt => pt.id===pid?{...pt,text:v}:pt)}:g));
+        const addGoalPoint = (gid) => setDomainGoals(p => p.map(g => g.id===gid?{...g,points:[...g.points,{id:`p${Date.now()}`,label:`יעד ${g.points.length+1}`,text:''}]}:g));
+        const removeGoalPoint = (gid, pid) => setDomainGoals(p => p.map(g => g.id===gid?{...g,points:g.points.filter(pt => pt.id!==pid)}:g));
+        const removeGoal = (gid) => setDomainGoals(p => p.filter(g => g.id !== gid));
+        const addNewGoal = () => { if (!newGoalTitle.trim()) return; setDomainGoals(prev => [...prev, { id: `dg${Date.now()}`, title: newGoalTitle, emoji: newGoalEmoji, color: newGoalColor, points: [{id:'p1',label:'יעד קרוב',text:''},{id:'p2',label:'יעד בינוני',text:''},{id:'p3',label:'יעד רחוק',text:''}] }]); setNewGoalTitle(''); setNewGoalEmoji('🎯'); setNewGoalColor('from-violet-500 to-purple-500'); };
+        const addNewIdea = () => { if (!newIdeaText.trim()) return; setIdeas(prev => [...prev, { id: `idea${Date.now()}`, text: newIdeaText, color: newIdeaColor, date: new Date().toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: 'numeric' }) }]); setNewIdeaText(''); setNewIdeaColor('yellow'); };
+        const removeIdea = (id) => { const idea = ideas.find(i => i.id === id); if (idea) addToArchive(idea.text, 'idea'); setIdeas(prev => prev.filter(i => i.id !== id)); };
+        const updateIdeaText = (id, text) => setIdeas(prev => prev.map(i => i.id === id ? {...i, text} : i));
+        const updateIdeaColor = (id, color) => setIdeas(prev => prev.map(i => i.id === id ? {...i, color} : i));
+        const addMindsetEntry = () => { if (!newMindsetText.trim()) return; setMindsetEntries(prev => [...prev, { id: `mindset${Date.now()}`, text: newMindsetText, date: new Date().toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: 'numeric' }) }]); setNewMindsetText(''); };
+        const updateMindsetEntry = (id, text) => setMindsetEntries(prev => prev.map(e => e.id === id ? {...e, text} : e));
+        const removeMindsetEntry = (id) => setMindsetEntries(prev => prev.filter(e => e.id !== id));
+        const addFutureSelfEntry = () => { if (!newFutureSelfText.trim()) return; setFutureSelfEntries(prev => [...prev, { id: `futureself${Date.now()}`, text: newFutureSelfText, date: new Date().toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: 'numeric' }) }]); setNewFutureSelfText(''); };
+        const updateFutureSelfEntry = (id, text) => setFutureSelfEntries(prev => prev.map(e => e.id === id ? {...e, text} : e));
+        const removeFutureSelfEntry = (id) => setFutureSelfEntries(prev => prev.filter(e => e.id !== id));
+        const addTab = () => { if (!newTabName.trim()) return; const newId = newTabName.toLowerCase().replace(/\s+/g, '-'); setTabs(prev => [...prev, { id: newId, name: newTabName, icon: newTabIcon, color: newTabColor }]); setNewTabName(''); setNewTabIcon('star'); setNewTabColor('violet'); };
+        const deleteTab = (id) => { setTabs(prev => prev.filter(t => t.id !== id)); if (activeTab === id) setActiveTab('home'); };
+        const updateTab = (id, field, value) => setTabs(prev => prev.map(t => t.id === id ? {...t, [field]: value} : t));
+        const addDomain = () => { if (!newDomainLabel.trim() || !newDomainEmoji.trim()) return; setDomains(prev => [...prev, { id: `d${Date.now()}`, value: newDomainLabel.toLowerCase().replace(/\s+/g,'-'), emoji: newDomainEmoji, label: newDomainLabel }]); setNewDomainEmoji(''); setNewDomainLabel(''); };
+        const deleteDomain = (id) => setDomains(prev => prev.filter(d => d.id !== id));
+        const getItemsForDate = (y, m, d) => { const dateStr = `${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`; return [...projects.filter(p => p.dueDate === dateStr).map(p => ({...p, type: 'project'})), ...tasks.filter(t => t.dueDate === dateStr).map(t => ({...t, type: 'task'})), ...(dayScheduleTasks[dateStr] || []).map(dt => ({...dt, type: 'daytask'}))]; };
+        const addTaskToDate = (dateStr, task) => setDayScheduleTasks(prev => ({ ...prev, [dateStr]: [...(prev[dateStr] || []), { id: `dt${Date.now()}`, text: task, completed: false }] }));
+        const toggleDayTask = (dateStr, taskId) => setDayScheduleTasks(prev => ({ ...prev, [dateStr]: prev[dateStr].map(t => t.id === taskId ? {...t, completed: !t.completed} : t) }));
+        const removeDayTask = (dateStr, taskId) => setDayScheduleTasks(prev => ({ ...prev, [dateStr]: prev[dateStr].filter(t => t.id !== taskId) }));
+        const performSearch = (query) => {
+            if (!query.trim()) { setSearchResults([]); return; }
+            const results = []; const lq = query.toLowerCase();
+            tasks.forEach(t => { if (t.text.toLowerCase().includes(lq)) results.push({ type: 'task', item: t, tab: 'tasks' }); });
+            projects.forEach(p => { if (p.title.toLowerCase().includes(lq)) results.push({ type: 'project', item: p, tab: 'tasks' }); });
+            ideas.forEach(i => { if (i.text.toLowerCase().includes(lq)) results.push({ type: 'idea', item: i, tab: 'ideas' }); });
+            mindsetEntries.forEach(e => { if (e.text.toLowerCase().includes(lq)) results.push({ type: 'mindset', item: e, tab: 'mindset' }); });
+            futureSelfEntries.forEach(e => { if (e.text.toLowerCase().includes(lq)) results.push({ type: 'future-self', item: e, tab: 'future-self' }); });
+            resources.forEach(r => { if (r.title.toLowerCase().includes(lq)) results.push({ type: 'resource', item: r, tab: 'resources' }); });
+            setSearchResults(results);
+        };
+
+        // Color maps for ideas
+        const ideaColorMap = {
+            yellow: {bg:'bg-yellow-100',border:'border-yellow-300',text:'text-yellow-800',dot:'bg-yellow-400'},
+            green: {bg:'bg-green-100',border:'border-green-300',text:'text-green-800',dot:'bg-green-400'},
+            blue: {bg:'bg-blue-100',border:'border-blue-300',text:'text-blue-800',dot:'bg-blue-400'},
+            purple: {bg:'bg-purple-100',border:'border-purple-300',text:'text-purple-800',dot:'bg-purple-400'},
+            pink: {bg:'bg-pink-100',border:'border-pink-300',text:'text-pink-800',dot:'bg-pink-400'},
+            orange: {bg:'bg-orange-100',border:'border-orange-300',text:'text-orange-800',dot:'bg-orange-400'},
+            red: {bg:'bg-red-100',border:'border-red-300',text:'text-red-800',dot:'bg-red-400'},
+            gray: {bg:'bg-gray-100',border:'border-gray-300',text:'text-gray-800',dot:'bg-gray-400'}
+        };
+
+        return (
+            <div className="min-h-screen soft-bg text-slate-700 p-4 md:p-6 lg:p-8">
+                {showConfetti && <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center"><div className="text-6xl animate-bounce-in">🎉</div></div>}
+
+                {/* TITLE */}
+                <div className="max-w-5xl mx-auto mb-5 pt-6 animate-slide-in-up">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex-1"></div>
+                        <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-violet-600 via-pink-500 to-amber-500 gradient-text tracking-tight text-center flex-1">מרכז הבקרה של החיים שלך</h1>
+                        <div className="flex-1 flex justify-end items-center gap-3">
+                            {user && (<>
+                                <div className="text-left hidden md:block"><p className="text-xs text-slate-500">מחוברת כ:</p><p className="text-sm font-semibold text-slate-700">{user.displayName}</p></div>
+                                {user.photoURL && <img src={user.photoURL} alt="Profile" className="w-10 h-10 rounded-full border-2 border-violet-300" />}
+                                <button onClick={() => auth.signOut()} className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-all flex items-center gap-1"><Icon name="log-out" size={14} /><span className="hidden md:inline">יציאה</span></button>
+                            </>)}
+                        </div>
+                    </div>
+                    <div className="h-1 w-32 mx-auto mt-3 bg-gradient-to-r from-violet-500 via-pink-400 to-amber-400 rounded-full opacity-60"></div>
+                    <div className="mt-4 flex items-center justify-center gap-2">
+                        <button onClick={saveAllData} className="px-5 py-2.5 bg-gradient-to-r from-violet-500 to-purple-500 hover:from-violet-600 hover:to-purple-600 text-white rounded-xl font-bold text-sm shadow-lg hover:shadow-xl transition-all flex items-center gap-2"><Icon name="save" size={16} />שמירת כל הנתונים</button>
+                    </div>
+                    {saveNotification && <div className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-full text-sm font-semibold shadow-lg animate-bounce-in"><Icon name="check-circle" size={16} />הנתונים נשמרו בהצלחה! ✨</div>}
+                </div>
+
+                {/* SEARCH */}
+                <div className="max-w-2xl mx-auto mb-6">
+                    <div className="relative">
+                        <Icon name="search" size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input type="text" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); performSearch(e.target.value); }} placeholder="חיפוש במשימות, פרויקטים, רעיונות ועוד..." className="w-full pr-12 pl-4 py-3 bg-white border-2 border-slate-200 rounded-2xl outline-none text-sm focus:border-violet-400 transition-all shadow-sm" />
+                        {searchQuery && <button onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"><Icon name="x" size={16} /></button>}
+                    </div>
+                    {searchResults.length > 0 && (<div className="mt-2 card p-4 max-h-96 overflow-y-auto"><div className="flex items-center justify-between mb-3"><h3 className="text-sm font-bold text-slate-700">תוצאות ({searchResults.length})</h3><button onClick={() => { setSearchQuery(''); setSearchResults([]); }} className="text-xs text-slate-500 hover:text-slate-700">סגור</button></div><div className="space-y-2">{searchResults.map((result, idx) => (<div key={idx} onClick={() => { setActiveTab(result.tab); setSearchQuery(''); setSearchResults([]); }} className="p-3 bg-slate-50 hover:bg-violet-50 rounded-lg cursor-pointer transition-all"><p className="text-sm font-medium text-slate-700">{result.item.text || result.item.title}</p><p className="text-xs text-slate-500 mt-1">{result.type === 'task' ? '✅ משימה' : result.type === 'project' ? '📂 פרויקט' : result.type === 'idea' ? '💡 רעיון' : result.type === 'mindset' ? '🧠 מיינדסט' : result.type === 'future-self' ? '✨ אני עתידית' : '🔗 משאב'}</p></div>))}</div></div>)}
+                    {searchQuery && searchResults.length === 0 && <div className="mt-2 card p-4 text-center"><p className="text-sm text-slate-400">לא נמצאו תוצאות עבור "{searchQuery}"</p></div>}
+                </div>
+
+                {/* TABS */}
+                <nav className="max-w-4xl mx-auto mb-8">
+                    <div className="flex gap-2 justify-center flex-wrap no-scrollbar pb-2">
+                        {tabs.map(tab => (
+                            <div key={tab.id} className="group relative">
+                                <button onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-semibold text-sm transition-all whitespace-nowrap border ${activeTab===tab.id ? `bg-${tab.color}-500 text-white border-transparent shadow-lg` : 'bg-white/80 text-slate-500 border-slate-100 hover:border-slate-200 hover:text-slate-700 hover:bg-white'}`}>
+                                    <Icon name={tab.icon} size={15} /><span>{tab.name}</span>
+                                </button>
+                                {editingTab === tab.id && (<div className="absolute top-full mt-2 left-0 card p-3 z-50 w-64 space-y-2"><input value={tab.name} onChange={(e) => updateTab(tab.id, 'name', e.target.value)} className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg text-xs" /><button onClick={() => setEditingTab(null)} className="w-full bg-emerald-500 text-white py-1.5 rounded-lg text-xs font-semibold">סיום עריכה</button></div>)}
+                                <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 flex gap-1 transition-opacity">
+                                    <button onClick={(e) => { e.stopPropagation(); setEditingTab(editingTab === tab.id ? null : tab.id); }} className="w-5 h-5 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center"><Icon name="edit-2" size={10} /></button>
+                                    <button onClick={(e) => { e.stopPropagation(); deleteTab(tab.id); }} className="w-5 h-5 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center"><Icon name="x" size={10} /></button>
+                                </div>
+                            </div>
+                        ))}
+                        <button onClick={() => setActiveTab('tab-settings')} className="flex items-center gap-1.5 px-4 py-2 rounded-full font-semibold text-sm transition-all whitespace-nowrap border bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200"><Icon name="plus" size={15} /><span>ניהול כרטיסיות</span></button>
+                    </div>
+                </nav>
+
+                {/* QUOTE */}
+                <header className="max-w-3xl mx-auto mb-10 text-center space-y-3 animate-slide-in-up">
+                    <div className="card p-5 text-center"><p className="text-base md:text-lg text-slate-700 font-semibold leading-relaxed">✨ "לטייל בכל העולם תוך יצירת השפעה והעצמה של אנשים להגשים את ייעודם." 🌍</p></div>
+                    <div className="inline-block bg-gradient-to-r from-pink-50 to-violet-50 border border-pink-100 px-5 py-3 rounded-2xl"><p className="text-xs text-slate-500 font-medium">🔥 "אני נחושה, טובה, מקצועית, אהובה. שווה המון כסף. אני הולכת לקראת החזון שלי בביטחון ובאומץ." 💪</p></div>
+                </header>
+
+                {/* HOME */}
+                {activeTab === 'home' && (
+                    <div className="max-w-5xl mx-auto space-y-8 animate-slide-in-up">
+                        <section>
+                            <div className="flex items-center justify-center gap-2 mb-6"><span className="text-2xl">🏆</span><h2 className="text-xl font-bold text-slate-800">יעדים לשנת 2026</h2></div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {projects.filter(p=>p.showOnHome).map(project => { const progress = calculateProgress(project.id); return (<div key={project.id} className="card p-5 text-center"><span className="text-3xl mb-2 block animate-float">{project.emoji}</span><h3 className="font-bold text-sm text-slate-700 mb-3 leading-tight">{project.title}</h3><span className={`text-2xl font-extrabold bg-gradient-to-r ${project.gradient} gradient-text`}>{progress}%</span><div className="h-1.5 bg-slate-100 rounded-full overflow-hidden mt-2"><div className={`h-full bg-gradient-to-r ${project.gradient} rounded-full transition-all duration-1000`} style={{width:`${progress}%`}}></div></div></div>); })}
+                            </div>
+                        </section>
+                        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                            {/* Morning Ritual */}
+                            <div className="lg:col-span-5 card p-5 group relative">
+                                <div className="flex items-center justify-between mb-5">
+                                    <div className="flex items-center gap-2.5 flex-1">
+                                        <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center"><Icon name="sun" size={18} className="text-amber-600" /></div>
+                                        {editingMorningTitle ? (<div className="flex items-center gap-2 flex-1"><input value={morningRitualEmoji} onChange={(e) => setMorningRitualEmoji(e.target.value)} className="w-12 p-1 text-center border-b-2 border-amber-300 outline-none text-sm" /><input value={morningRitualTitle} onChange={(e) => setMorningRitualTitle(e.target.value)} className="flex-1 p-1 border-b-2 border-amber-300 outline-none text-base font-bold" /><button onClick={() => setEditingMorningTitle(false)} className="text-emerald-500"><Icon name="check" size={16} /></button></div>) : (<h2 className="text-base font-bold text-slate-800">{morningRitualTitle} {morningRitualEmoji}</h2>)}
+                                    </div>
+                                    <div className="flex items-center gap-2"><button onClick={() => setEditingMorningTitle(!editingMorningTitle)} className="w-8 h-8 bg-blue-100 hover:bg-blue-200 rounded-lg flex items-center justify-center text-blue-600 transition-all opacity-0 group-hover:opacity-100"><Icon name="edit-2" size={14} /></button><button onClick={addMorningRitualItem} className="w-8 h-8 bg-amber-100 hover:bg-amber-200 rounded-lg flex items-center justify-center text-amber-600 transition-all"><Icon name="plus" size={16} /></button></div>
+                                </div>
+                                <div className="space-y-2">{morningRitual.map(item => (<div key={item.id} className="flex items-center gap-3 group"><button onClick={() => toggleItem(morningRitual, setMorningRitual, item.id)} className="shrink-0">{item.completed ? <Icon name="check-circle-2" size={18} className="text-emerald-500" /> : <Icon name="circle" size={18} className="text-slate-200" />}</button><input value={item.text} onChange={(e) => updateMorningRitualText(item.id, e.target.value)} className={`flex-1 text-sm font-medium bg-transparent border-none outline-none ${item.completed ? 'text-slate-400 line-through' : 'text-slate-600'}`} /><button onClick={() => deleteMorningRitualItem(item.id)} className="opacity-0 group-hover:opacity-100 shrink-0 w-7 h-7 bg-rose-50 hover:bg-rose-100 rounded-lg flex items-center justify-center text-rose-500 transition-all"><Icon name="trash-2" size={12} /></button></div>))}</div>
+                            </div>
+                            {/* Game Changers */}
+                            <div className="lg:col-span-7 card p-5 group relative">
+                                <div className="flex items-center justify-between mb-5">
+                                    <div className="flex items-center gap-2.5 flex-1">
+                                        <div className="w-9 h-9 rounded-xl bg-violet-100 flex items-center justify-center"><Icon name="zap" size={18} className="text-violet-600" /></div>
+                                        {editingGameChangersTitle ? (<div className="flex items-center gap-2 flex-1"><input value={gameChangersEmoji} onChange={(e) => setGameChangersEmoji(e.target.value)} className="w-12 p-1 text-center border-b-2 border-violet-300 outline-none text-sm" /><input value={gameChangersTitle} onChange={(e) => setGameChangersTitle(e.target.value)} className="flex-1 p-1 border-b-2 border-violet-300 outline-none text-base font-bold" /><button onClick={() => setEditingGameChangersTitle(false)} className="text-emerald-500"><Icon name="check" size={16} /></button></div>) : (<h2 className="text-base font-bold bg-gradient-to-r from-violet-600 to-pink-500 gradient-text">{gameChangersTitle} {gameChangersEmoji}</h2>)}
+                                    </div>
+                                    <div className="flex items-center gap-2"><button onClick={() => setEditingGameChangersTitle(!editingGameChangersTitle)} className="w-8 h-8 bg-blue-100 hover:bg-blue-200 rounded-lg flex items-center justify-center text-blue-600 transition-all opacity-0 group-hover:opacity-100"><Icon name="edit-2" size={14} /></button><button onClick={addGameChanger} className="w-8 h-8 bg-violet-100 hover:bg-violet-200 rounded-lg flex items-center justify-center text-violet-600 transition-all"><Icon name="plus" size={16} /></button></div>
+                                </div>
+                                <div className="grid md:grid-cols-3 gap-3">{gameChangers.map((gc, i) => (<div key={gc.id} className="p-3.5 bg-slate-50 rounded-xl text-center border border-slate-100 relative group"><button onClick={() => deleteGameChanger(gc.id)} className="absolute -top-2 -right-2 w-6 h-6 bg-rose-500 hover:bg-rose-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"><Icon name="x" size={12} /></button><div className="flex items-center justify-center gap-1 mb-2"><Icon name="trophy" size={14} className={i===0?'text-amber-400':i===1?'text-slate-400':'text-orange-400'} /><span className="text-[10px] font-bold text-slate-400 uppercase">#{i+1}</span></div><textarea className="bg-transparent w-full text-center font-semibold text-slate-700 outline-none resize-none placeholder:text-slate-300 text-sm min-h-[50px]" placeholder={gc.placeholder} value={gc.text} onChange={e => updateGameChanger(gc.id, e.target.value)} />{gc.text.trim() && (<button onClick={() => archiveGameChanger(gc)} className="mt-1 text-[9px] font-bold text-violet-400 hover:text-violet-600 transition-all flex items-center gap-1 mx-auto"><Icon name="archive" size={11} /> שמור לארכיון</button>)}</div>))}</div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* TAB SETTINGS */}
+                {activeTab === 'tab-settings' && (
+                    <div className="max-w-4xl mx-auto space-y-6 animate-slide-in-up pb-16">
+                        <div className="card p-5 flex items-center gap-3 justify-center text-center"><div><h2 className="text-xl font-bold text-slate-800">⚙️ ניהול כרטיסיות</h2></div></div>
+                        <div className="card p-5 border-t-[3px] border-blue-400">
+                            <div className="space-y-2.5"><input type="text" value={newTabName} onChange={e => setNewTabName(e.target.value)} placeholder="שם הכרטיסייה..." className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm" /><input type="text" value={newTabIcon} onChange={e => setNewTabIcon(e.target.value)} placeholder="שם האייקון (star, heart, ...)" className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm" /><select value={newTabColor} onChange={e => setNewTabColor(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-xs font-medium cursor-pointer"><option value="violet">💜 סגול</option><option value="blue">💙 כחול</option><option value="pink">💗 ורוד</option><option value="emerald">💚 ירוק</option><option value="amber">🧡 כתום</option><option value="slate">⚫ אפור</option></select><button onClick={addTab} className="w-full bg-blue-500 text-white py-2 rounded-xl font-semibold text-xs hover:bg-blue-600 transition-all">הוסף כרטיסייה</button></div>
+                        </div>
+                        <div className="space-y-3">{tabs.map(tab => (<div key={tab.id} className="card p-4 flex items-center gap-3 group"><Icon name={tab.icon} size={20} className={`text-${tab.color}-500`} /><div className="flex-1"><p className="text-sm font-semibold text-slate-700">{tab.name}</p></div><button onClick={() => deleteTab(tab.id)} className="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-lg bg-rose-50 hover:bg-rose-100 flex items-center justify-center text-rose-500"><Icon name="trash-2" size={14} /></button></div>))}</div>
+                    </div>
+                )}
+
+                {/* TASKS */}
+                {activeTab === 'tasks' && (
+                    <div className="max-w-5xl mx-auto space-y-8 animate-slide-in-up pb-16">
+                        <section className="space-y-5">
+                            <div className="flex items-center justify-center gap-2"><div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center"><Icon name="list-todo" size={15} className="text-violet-600" /></div><h2 className="text-base font-bold text-slate-800">רשימת המשימות שלי</h2></div>
+                            <div className="card p-5 border-t-[3px] border-blue-400">
+                                <div className="space-y-2.5"><input type="text" value={newTaskText} onChange={e => setNewTaskText(e.target.value)} placeholder="שם המשימה..." className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm" /><select value={newTaskDomain} onChange={e => setNewTaskDomain(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-xs font-medium cursor-pointer">{domains.map(d => (<option key={d.id} value={d.value}>{d.emoji} {d.label}</option>))}</select><input type="date" value={newTaskDueDate} onChange={e => setNewTaskDueDate(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-xs font-medium cursor-pointer" /><button onClick={addNewTask} className="w-full bg-blue-500 text-white py-2 rounded-xl font-semibold text-xs hover:bg-blue-600 transition-all">הוסף משימה</button></div>
+                            </div>
+                            <div className="space-y-3">{tasks.map(task => (<div key={task.id} className="card p-4 flex items-center gap-3"><button onClick={() => toggleTask(task.id)} className="shrink-0">{task.completed ? <Icon name="check-circle-2" size={20} className="text-emerald-500" /> : <Icon name="circle" size={20} className="text-slate-300" />}</button><div className="flex-1 min-w-0"><p className={`text-sm font-semibold ${task.completed ? 'line-through text-slate-400' : 'text-slate-700'}`}>{task.text}</p>{task.dueDate && <p className="text-xs text-slate-400 mt-1">📅 {new Date(task.dueDate).toLocaleDateString('he-IL')}</p>}</div></div>))}</div>
+                        </section>
+
+                        <section className="space-y-5">
+                            <div className="flex items-center justify-center gap-2"><span className="text-2xl">📂</span><h2 className="text-base font-bold text-slate-800">הפרויקטים שלי</h2></div>
+                            <div className="card p-5 border-t-[3px] border-violet-400">
+                                <div className="space-y-2.5"><input type="text" value={newProjectTitle} onChange={e => setNewProjectTitle(e.target.value)} placeholder="שם הפרויקט..." className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm" /><input type="text" value={newProjectEmoji} onChange={e => setNewProjectEmoji(e.target.value)} placeholder="אימוג'י (לדוגמה: 🎯)" className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm" /><select value={newProjectDomain} onChange={e => setNewProjectDomain(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-xs font-medium cursor-pointer">{domains.map(d => (<option key={d.id} value={d.value}>{d.emoji} {d.label}</option>))}</select><select value={newProjectColor} onChange={e => setNewProjectColor(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-xs font-medium cursor-pointer"><option value="from-violet-500 to-purple-500">💜 סגול</option><option value="from-blue-500 to-cyan-500">💙 כחול</option><option value="from-pink-500 to-rose-500">💗 ורוד</option><option value="from-emerald-500 to-teal-500">💚 ירוק</option><option value="from-amber-500 to-orange-500">🧡 כתום</option></select><input type="date" value={newProjectDueDate} onChange={e => setNewProjectDueDate(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-xs font-medium cursor-pointer" /><button onClick={addNewProject} className="w-full bg-violet-500 text-white py-2 rounded-xl font-semibold text-xs hover:bg-violet-600 transition-all">הוסף פרויקט</button></div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{projects.map(project => (<div key={project.id} className="card overflow-hidden group">
+                                <div className={`bg-gradient-to-r ${project.color || 'from-violet-500 to-purple-500'} p-4 text-white`}><div className="flex items-start justify-between mb-2"><div className="flex items-center gap-2"><span className="text-2xl">{project.emoji}</span><h3 className="text-sm font-bold">{project.title}</h3></div><button onClick={() => deleteProject(project.id)} className="opacity-0 group-hover:opacity-100 text-white/80 hover:text-white transition-all"><Icon name="trash-2" size={14} /></button></div>{project.dueDate && <p className="text-xs text-white/80">📅 {new Date(project.dueDate).toLocaleDateString('he-IL')}</p>}</div>
+                                <div className="p-4"><div className="space-y-2 mb-3">{tasks.filter(t => t.projectId === project.id).map(task => (<div key={task.id} className="flex items-center gap-2 text-xs"><button onClick={() => toggleTask(task.id)}>{task.completed ? <Icon name="check-circle-2" size={14} className="text-emerald-500" /> : <Icon name="circle" size={14} className="text-slate-300" />}</button><span className={task.completed ? 'line-through text-slate-400' : 'text-slate-600'}>{task.text}</span></div>))}</div>
+                                {addingTaskToProject === project.id ? (<div className="space-y-2"><input type="text" value={newTaskText} onChange={e => setNewTaskText(e.target.value)} placeholder="משימה חדשה..." className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg outline-none text-xs" onKeyPress={(e) => { if (e.key === 'Enter') addTaskToProject(project.id); }} /><div className="flex gap-2"><button onClick={() => addTaskToProject(project.id)} className="flex-1 bg-emerald-500 text-white py-1.5 rounded-lg text-xs font-semibold hover:bg-emerald-600 transition-all">הוסף</button><button onClick={() => setAddingTaskToProject(null)} className="flex-1 bg-slate-200 text-slate-600 py-1.5 rounded-lg text-xs font-semibold hover:bg-slate-300 transition-all">ביטול</button></div></div>) : (<button onClick={() => setAddingTaskToProject(project.id)} className="w-full py-2 border border-dashed border-slate-200 rounded-lg text-xs font-semibold text-slate-400 hover:border-violet-300 hover:text-violet-500 transition-all flex items-center justify-center gap-1"><Icon name="plus" size={12} />הוסף משימה לפרויקט</button>)}</div>
+                            </div>))}</div>
+                        </section>
+
+                        <section className="space-y-5">
+                            <div className="flex items-center justify-center gap-2"><div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center"><Icon name="tag" size={15} className="text-indigo-600" /></div><h2 className="text-base font-bold text-slate-800">ניהול תחומים</h2></div>
+                            <div className="card p-5 border-t-[3px] border-indigo-400"><div className="grid grid-cols-1 md:grid-cols-3 gap-3"><input type="text" value={newDomainEmoji} onChange={e => setNewDomainEmoji(e.target.value)} placeholder="אימוג'י" className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm" /><input type="text" value={newDomainLabel} onChange={e => setNewDomainLabel(e.target.value)} placeholder="שם התחום" className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm" /><button onClick={addDomain} className="bg-indigo-500 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-indigo-600 transition-all">הוסף תחום</button></div></div>
+                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">{domains.map(d => (<div key={d.id} className="card p-3 flex items-center gap-2 group"><span className="text-xl">{d.emoji}</span><span className="flex-1 text-sm font-semibold text-slate-700 truncate">{d.label}</span><button onClick={() => deleteDomain(d.id)} className="opacity-0 group-hover:opacity-100 w-7 h-7 bg-rose-50 hover:bg-rose-100 rounded-lg flex items-center justify-center text-rose-500 transition-all"><Icon name="trash-2" size={12} /></button></div>))}</div>
+                        </section>
+                    </div>
+                )}
+
+                {/* SCHEDULE */}
+                {activeTab === 'schedule' && (
+                    <div className="max-w-4xl mx-auto space-y-6 animate-slide-in-up pb-16">
+                        <div className="card p-5 flex items-center justify-between flex-wrap gap-3"><div className="flex items-center gap-3 mx-auto"><div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center"><Icon name="calendar-clock" size={20} className="text-amber-600" /></div><h2 className="text-xl font-bold text-slate-800">⏰ לו"ז מעצים</h2></div><button onClick={saveScheduleToArchive} className="bg-violet-500 text-white px-4 py-2 rounded-xl font-semibold text-xs hover:bg-violet-600 transition-all flex items-center gap-1.5"><Icon name="archive" size={14} /> שמור לו"ז לארכיון</button></div>
+                        <div className="card overflow-hidden">{dailySchedule.map(slot => (<div key={slot.id} className="flex group hover:bg-slate-50/60 transition-all items-center border-b border-slate-50 last:border-0"><button onClick={() => toggleScheduleItem(slot.id)} className="w-12 flex items-center justify-center shrink-0">{slot.completed ? <Icon name="check-circle-2" size={18} className="text-emerald-500" /> : <Icon name="circle" size={18} className="text-slate-300" />}</button><div className="w-32 p-3 flex flex-col items-center border-l border-slate-50"><input value={slot.time} onChange={e => updateScheduleTime(slot.id, e.target.value)} className={`font-bold text-center text-[11px] bg-transparent border-none outline-none w-full ${slot.completed ? 'line-through text-slate-400' : 'text-slate-700'}`} /><div className="w-1.5 h-1.5 rounded-full mt-1" style={{backgroundColor:typeColor(slot.type)}}></div></div><div className="flex-1 p-3 flex flex-col gap-1"><input value={slot.activity} onChange={e => updateScheduleActivity(slot.id, e.target.value)} className={`text-sm font-semibold bg-transparent border-none outline-none ${slot.completed ? 'line-through text-slate-400' : 'text-slate-700'}`} /><div className="flex items-center gap-2"><span className={`text-[9px] font-bold uppercase tracking-wider shrink-0 ${slot.completed ? 'text-slate-300' : 'text-slate-400'}`}>{slot.domain}</span><input value={slot.note} onChange={e => updateScheduleNote(slot.id, e.target.value)} placeholder="הערה..." className={`text-[11px] bg-transparent border-none outline-none w-full italic ${slot.completed ? 'text-slate-300' : 'text-slate-400'}`} /></div></div><button onClick={() => deleteScheduleItem(slot.id)} className="w-10 flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100 hover:bg-rose-50 transition-all"><Icon name="trash-2" size={16} className="text-rose-400 hover:text-rose-600" /></button></div>))}</div>
+                    </div>
+                )}
+
+                {/* METRICS */}
+                {activeTab === 'metrics' && (
+                    <div className="max-w-5xl mx-auto space-y-6 animate-slide-in-up pb-16">
+                        <div className="card p-5 flex items-center gap-3 justify-center text-center"><div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center"><Icon name="trending-up" size={20} className="text-emerald-600" /></div><h2 className="text-xl font-bold text-slate-800">📊 מדדי הצלחה לפי תחומים</h2></div>
+                        <div className="card overflow-hidden"><table className="w-full text-right border-collapse"><thead><tr className="bg-slate-100 border-b-2 border-slate-200"><th className="p-4 text-sm font-extrabold text-slate-700 w-36">תחום</th><th className="p-4 text-sm font-extrabold text-slate-700">מדד יומי</th><th className="p-4 text-sm font-extrabold text-slate-700">מדד שבועי</th><th className="p-4 text-sm font-extrabold text-slate-700">יעד חודשי</th><th className="p-4 w-10"></th></tr></thead><tbody className="divide-y divide-slate-50">{successMetrics.map(metric => (<tr key={metric.id} className="group hover:bg-slate-50/50 transition-all"><td className="p-3.5"><input value={metric.domain} onChange={e => updateMetricField(metric.id,'domain',e.target.value)} className="font-bold text-slate-800 bg-transparent border-none outline-none w-full text-sm" /></td><td className="p-3.5"><textarea value={metric.daily} onChange={e => updateMetricField(metric.id,'daily',e.target.value)} className="text-xs text-slate-600 bg-transparent border-none outline-none w-full resize-none min-h-[36px]" rows={1} /></td><td className="p-3.5"><textarea value={metric.weekly} onChange={e => updateMetricField(metric.id,'weekly',e.target.value)} className="text-xs text-slate-600 bg-transparent border-none outline-none w-full resize-none min-h-[36px]" rows={1} /></td><td className="p-3.5"><textarea value={metric.monthly} onChange={e => updateMetricField(metric.id,'monthly',e.target.value)} className="text-xs font-bold text-violet-600 bg-transparent border-none outline-none w-full resize-none min-h-[36px]" rows={1} /></td><td className="p-3.5 text-center"><button onClick={() => removeMetricRow(metric.id)} className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-rose-500 transition-all"><Icon name="trash-2" size={14} /></button></td></tr>))}
+                        <tr><td colSpan="5" className="p-3 text-center"><button onClick={addMetricRow} className="w-full py-2.5 border border-dashed border-slate-300 rounded-lg text-sm font-bold text-slate-500 hover:border-emerald-400 hover:text-emerald-600 transition-all flex items-center justify-center gap-2"><Icon name="plus" size={16} /> הוספת תחום</button></td></tr></tbody></table></div>
+                    </div>
+                )}
+
+                {/* GOALS */}
+                {activeTab === 'goals' && (
+                    <div className="max-w-5xl mx-auto space-y-6 animate-slide-in-up pb-16">
+                        <div className="card p-5 flex items-center gap-3 justify-center text-center"><h2 className="text-xl font-bold text-slate-800">🎯 יעדים אסטרטגיים לפי תחומים</h2></div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{domainGoals.map(goal => (<div key={goal.id} className="card overflow-hidden flex flex-col group/goal"><div className={`h-1 bg-gradient-to-r ${goal.color}`}></div><div className="p-4 pb-2 flex items-center gap-2.5"><span className="text-2xl animate-float">{goal.emoji}</span><input value={goal.title} onChange={e => updateGoalTitle(goal.id, e.target.value)} className="text-sm font-bold text-slate-800 bg-transparent border-none outline-none flex-1" /><button onClick={() => removeGoal(goal.id)} className="opacity-0 group-hover/goal:opacity-100 text-slate-300 hover:text-rose-500 transition-all shrink-0"><Icon name="trash-2" size={16} /></button></div><div className="px-4 pb-4 space-y-3 flex-1">{goal.current && (<div className="p-2.5 bg-violet-50 rounded-lg border border-violet-100"><label className="text-[9px] font-bold text-slate-400 uppercase block mb-0.5">מצב נוכחי</label><input value={goal.current} onChange={e => updateGoalCurrent(goal.id, e.target.value)} className="text-xs font-bold text-violet-600 bg-transparent border-none outline-none w-full" /></div>)}<div className="space-y-2.5">{goal.points.map((point, pi) => (<div key={point.id} className="relative pr-4 border-r-2 border-slate-100 group/point hover:border-pink-300 transition-colors"><div className={`absolute right-[-5px] top-1 w-2 h-2 rounded-full ${pi%3===0?'bg-blue-400':pi%3===1?'bg-violet-400':'bg-emerald-400'}`}></div><div className="flex justify-between items-start mb-0.5"><label className="text-[8px] font-bold text-slate-400 uppercase">{point.label}</label><button onClick={() => removeGoalPoint(goal.id, point.id)} className="opacity-0 group-hover/point:opacity-100 text-slate-300 hover:text-rose-500 transition-all"><Icon name="trash-2" size={11} /></button></div><textarea value={point.text} onChange={e => updateGoalPoint(goal.id, point.id, e.target.value)} className="text-xs font-medium text-slate-600 bg-transparent border-none outline-none w-full resize-none leading-relaxed" rows={2} /></div>))}<button onClick={() => addGoalPoint(goal.id)} className="w-full py-2 border border-dashed border-slate-200 rounded-lg text-[9px] font-bold text-slate-400 uppercase hover:border-pink-300 hover:text-pink-500 transition-all flex items-center justify-center gap-1"><Icon name="plus" size={11} /> הוספת יעד נוסף</button></div></div></div>))}</div>
+                        <div className="card p-5 border-t-[3px] border-pink-400"><div className="space-y-2.5"><input type="text" value={newGoalTitle} onChange={e => setNewGoalTitle(e.target.value)} placeholder="שם היעד..." className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm" /><input type="text" value={newGoalEmoji} onChange={e => setNewGoalEmoji(e.target.value)} placeholder="אימוג'י" className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm" /><select value={newGoalColor} onChange={e => setNewGoalColor(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-xs font-medium cursor-pointer"><option value="from-violet-500 to-purple-500">💜 סגול</option><option value="from-blue-500 to-cyan-500">💙 כחול</option><option value="from-pink-500 to-rose-500">💗 ורוד</option><option value="from-emerald-500 to-teal-500">💚 ירוק</option><option value="from-amber-500 to-orange-500">🧡 כתום</option></select><button onClick={addNewGoal} className="w-full bg-pink-500 text-white py-2 rounded-xl font-semibold text-xs hover:bg-pink-600 transition-all">הוסף יעד</button></div></div>
+                    </div>
+                )}
+
+                {/* CALENDAR */}
+                {activeTab === 'gantt' && (
+                    <div className="max-w-7xl mx-auto space-y-6 animate-slide-in-up pb-16">
+                        <div className="card p-5"><div className="flex items-center gap-3 justify-center text-center mb-4"><h2 className="text-xl font-bold text-slate-800">📅 יומן 2026</h2></div><div className="flex items-center justify-center gap-2 flex-wrap"><button onClick={() => setCalendarView('year')} className={`px-4 py-2 rounded-xl font-semibold text-xs transition-all ${calendarView==='year'?'bg-cyan-500 text-white':'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>שנה</button><button onClick={() => setCalendarView('month')} className={`px-4 py-2 rounded-xl font-semibold text-xs transition-all ${calendarView==='month'?'bg-cyan-500 text-white':'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>חודש</button><button onClick={() => setCalendarView('week')} className={`px-4 py-2 rounded-xl font-semibold text-xs transition-all ${calendarView==='week'?'bg-cyan-500 text-white':'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>שבוע</button><button onClick={() => setCalendarView('day')} className={`px-4 py-2 rounded-xl font-semibold text-xs transition-all ${calendarView==='day'?'bg-cyan-500 text-white':'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>יום</button></div></div>
+                        {(calendarView==='month'||calendarView==='week') && (<div className="card p-4 flex items-center justify-between"><button onClick={() => { if(currentMonth===1){setCurrentMonth(12);setCurrentYear(currentYear-1);}else{setCurrentMonth(currentMonth-1);} }} className="px-4 py-2 bg-cyan-100 hover:bg-cyan-200 rounded-xl font-semibold text-sm text-cyan-700 transition-all"><Icon name="chevron-right" size={16} /></button><h3 className="text-lg font-bold text-slate-800">{months[currentMonth-1]} {currentYear}</h3><button onClick={() => { if(currentMonth===12){setCurrentMonth(1);setCurrentYear(currentYear+1);}else{setCurrentMonth(currentMonth+1);} }} className="px-4 py-2 bg-cyan-100 hover:bg-cyan-200 rounded-xl font-semibold text-sm text-cyan-700 transition-all"><Icon name="chevron-left" size={16} /></button></div>)}
+                        {calendarView==='year' && (<div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">{[1,2,3,4,5,6,7,8,9,10,11,12].map(month => { const dIM=getDaysInMonth(currentYear,month); const fD=getFirstDayOfMonth(currentYear,month); return (<div key={month} className="card p-4"><h3 className="text-sm font-bold text-slate-700 text-center mb-3">{months[month-1]}</h3><div className="grid grid-cols-7 gap-1 mb-1">{['א','ב','ג','ד','ה','ו','ש'].map(d=><div key={d} className="text-center text-[9px] font-bold text-slate-400">{d}</div>)}</div><div className="grid grid-cols-7 gap-1">{[...Array(fD)].map((_,i)=><div key={`e${i}`} className="aspect-square"></div>)}{[...Array(dIM)].map((_,i)=>{ const d=i+1; const dateStr=`${currentYear}-${String(month).padStart(2,'0')}-${String(d).padStart(2,'0')}`; const items=getItemsForDate(currentYear,month,d); const holiday=israeliHolidays[dateStr]; const isSab=getDayOfWeek(currentYear,month,d)===6; return (<div key={d} onClick={()=>{setSelectedDate(dateStr);setCalendarView('day');setCurrentMonth(month);}} className={`aspect-square text-[9px] flex items-center justify-center rounded cursor-pointer transition-all ${isSab?'bg-blue-100 text-blue-700':holiday?'bg-amber-100 text-amber-700':items.length>0?'bg-violet-100 text-violet-700':'text-slate-600 hover:bg-slate-100'}`}>{d}</div>); })}</div></div>); })}</div>)}
+                        {calendarView==='month' && (() => { const dIM=getDaysInMonth(currentYear,currentMonth); const fD=getFirstDayOfMonth(currentYear,currentMonth); return (<div className="card p-6"><div className="grid grid-cols-7 gap-2 mb-2">{['א','ב','ג','ד','ה','ו','ש'].map(d=><div key={d} className="text-center font-bold text-slate-500 text-sm py-2">{d}</div>)}</div><div className="grid grid-cols-7 gap-2">{[...Array(fD)].map((_,i)=><div key={`e${i}`} className="aspect-square"></div>)}{[...Array(dIM)].map((_,i)=>{ const d=i+1; const dateStr=`${currentYear}-${String(currentMonth).padStart(2,'0')}-${String(d).padStart(2,'0')}`; const items=getItemsForDate(currentYear,currentMonth,d); const holiday=israeliHolidays[dateStr]; const isSab=getDayOfWeek(currentYear,currentMonth,d)===6; return (<div key={d} onClick={()=>setSelectedDate(dateStr)} className={`aspect-square border rounded-xl p-2 cursor-pointer transition-all hover:shadow-md ${isSab?'bg-blue-50 border-blue-200':holiday?'bg-amber-50 border-amber-300':'bg-white border-slate-200 hover:border-cyan-300'}`}><div className="flex flex-col h-full"><div className="text-sm font-bold text-slate-700 mb-1">{d}</div>{holiday&&<div className="text-[9px] mb-1">{holiday}</div>}{items.length>0&&(<div className="flex-1 overflow-hidden">{items.slice(0,2).map(item=><div key={item.id} className="text-[8px] bg-violet-100 text-violet-700 px-1 py-0.5 rounded truncate mb-0.5">{item.type==='project'?`📂 ${item.title}`:item.type==='task'?`✓ ${item.text}`:item.text}</div>)}{items.length>2&&<div className="text-[8px] text-slate-400">+{items.length-2}</div>}</div>)}</div></div>); })}</div></div>); })()}
+                        {calendarView==='day' && selectedDate && (() => { const [y,m,d]=selectedDate.split('-').map(Number); const items=getItemsForDate(y,m,d); const holiday=israeliHolidays[selectedDate]; const dayNames=['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת']; return (<div className="space-y-4"><div className="card p-6"><div className="text-center mb-4"><h3 className="text-2xl font-bold text-slate-800">יום {dayNames[getDayOfWeek(y,m,d)]}</h3><p className="text-slate-500">{d} {months[m-1]} {y}</p>{holiday&&<p className="text-amber-600 font-bold mt-2">{holiday}</p>}</div><div className="mb-4"><h4 className="font-bold text-slate-700 mb-3">לוז יומי:</h4><div className="space-y-2">{dailySchedule.map(slot=><div key={slot.id} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg"><span className="text-xs font-bold text-slate-600 w-24">{slot.time}</span><span className="text-sm text-slate-700">{slot.activity}</span></div>)}</div></div><div><h4 className="font-bold text-slate-700 mb-3">משימות ליום זה:</h4>{items.length>0?(<div className="space-y-2">{items.map(item=><div key={item.id} className="flex items-center gap-2 p-3 bg-violet-50 border border-violet-200 rounded-xl">{item.type==='daytask'?(<><button onClick={()=>toggleDayTask(selectedDate,item.id)} className="shrink-0">{item.completed?<Icon name="check-circle-2" size={18} className="text-emerald-500"/>:<Icon name="circle" size={18} className="text-slate-300"/>}</button><span className={`flex-1 text-sm ${item.completed?'line-through text-slate-400':'text-slate-700'}`}>{item.text}</span><button onClick={()=>removeDayTask(selectedDate,item.id)} className="shrink-0 text-rose-400 hover:text-rose-600"><Icon name="trash-2" size={14}/></button></>):(<span className="text-sm text-slate-700">{item.type==='project'?`📂 ${item.title}`:`✓ ${item.text}`}</span>)}</div>)}</div>):<p className="text-slate-400 text-sm">אין משימות ליום זה</p>}<div className="mt-4"><input type="text" placeholder="הוסף משימה ליום זה..." className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none text-sm" onKeyPress={e=>{if(e.key==='Enter'&&e.target.value.trim()){addTaskToDate(selectedDate,e.target.value.trim());e.target.value='';}}} /></div></div></div><button onClick={()=>setSelectedDate(null)} className="w-full py-3 bg-slate-100 hover:bg-slate-200 rounded-xl font-semibold text-sm text-slate-600 transition-all">חזרה לתצוגת חודש</button></div>); })()}
+                        {calendarView==='day'&&!selectedDate&&(<div className="card p-8 text-center"><p className="text-slate-500 text-sm">בחר יום מתצוגת החודש</p><button onClick={()=>setCalendarView('month')} className="mt-4 px-6 py-2 bg-cyan-500 text-white rounded-xl font-semibold text-sm hover:bg-cyan-600 transition-all">עבור לתצוגת חודש</button></div>)}
+                    </div>
+                )}
+
+                {/* FUTURE SELF */}
+                {activeTab === 'future-self' && (
+                    <div className="max-w-5xl mx-auto space-y-6 animate-slide-in-up pb-16">
+                        <div className="card p-5 flex items-center gap-3 justify-center text-center"><div className="w-10 h-10 rounded-xl bg-rose-100 flex items-center justify-center"><Icon name="sparkles" size={20} className="text-rose-600" /></div><h2 className="text-xl font-bold text-slate-800">✨ אני העתידית</h2></div>
+                        <div className="card p-5 border-t-[3px] border-rose-400"><textarea value={newFutureSelfText} onChange={e => setNewFutureSelfText(e.target.value)} placeholder="כתבי כאן את החזון שלך, החלומות, התכניות... ✨" className="w-full p-3 bg-rose-50 border border-rose-200 rounded-xl outline-none text-sm resize-none focus:border-rose-300 transition-all mb-3" rows={6} /><button onClick={addFutureSelfEntry} className="w-full bg-rose-500 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-rose-600 transition-all">💾 שמור כתיבה</button></div>
+                        {futureSelfEntries.length>0?(<div className="space-y-4">{futureSelfEntries.map(entry=><div key={entry.id} className="card p-5 bg-gradient-to-br from-rose-50 to-pink-50 border-2 border-rose-200 group"><div className="flex items-start justify-between mb-3"><div className="w-3 h-3 rounded-full bg-rose-400"></div><button onClick={()=>removeFutureSelfEntry(entry.id)} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 transition-all"><Icon name="trash-2" size={14}/></button></div><textarea value={entry.text} onChange={e=>updateFutureSelfEntry(entry.id,e.target.value)} className="w-full bg-transparent border-none outline-none text-sm font-medium text-slate-700 resize-none leading-relaxed mb-3 min-h-[100px]" /><span className="text-[10px] text-slate-500">{entry.date}</span></div>)}</div>):(<div className="card p-12 text-center"><span className="text-4xl mb-4 block">✨</span><p className="text-slate-400 font-medium text-sm">עדיין אין כתיבות</p></div>)}
+                    </div>
+                )}
+
+                {/* MINDSET */}
+                {activeTab === 'mindset' && (
+                    <div className="max-w-5xl mx-auto space-y-6 animate-slide-in-up pb-16">
+                        <div className="card p-5 flex items-center gap-3 justify-center text-center"><div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center"><Icon name="brain" size={20} className="text-purple-600" /></div><h2 className="text-xl font-bold text-slate-800">🧠 מיינדסט</h2></div>
+                        <div className="card p-5 border-t-[3px] border-purple-400"><textarea value={newMindsetText} onChange={e => setNewMindsetText(e.target.value)} placeholder="מה עובר לך בראש? מחשבות, רעיונות, הרהורים... 🧠" className="w-full p-3 bg-purple-50 border border-purple-200 rounded-xl outline-none text-sm resize-none focus:border-purple-300 transition-all mb-3" rows={6} /><button onClick={addMindsetEntry} className="w-full bg-purple-500 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-purple-600 transition-all">💾 שמור כתיבה</button></div>
+                        {mindsetEntries.length>0?(<div className="space-y-4">{mindsetEntries.map(entry=><div key={entry.id} className="card p-5 bg-gradient-to-br from-purple-50 to-violet-50 border-2 border-purple-200 group"><div className="flex items-start justify-between mb-3"><div className="w-3 h-3 rounded-full bg-purple-400"></div><button onClick={()=>removeMindsetEntry(entry.id)} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-purple-500 transition-all"><Icon name="trash-2" size={14}/></button></div><textarea value={entry.text} onChange={e=>updateMindsetEntry(entry.id,e.target.value)} className="w-full bg-transparent border-none outline-none text-sm font-medium text-slate-700 resize-none leading-relaxed mb-3 min-h-[100px]" /><span className="text-[10px] text-slate-500">{entry.date}</span></div>)}</div>):(<div className="card p-12 text-center"><span className="text-4xl mb-4 block">🧠</span><p className="text-slate-400 font-medium text-sm">עדיין אין כתיבות</p></div>)}
+                    </div>
+                )}
+
+                {/* IDEAS */}
+                {activeTab === 'ideas' && (
+                    <div className="max-w-5xl mx-auto space-y-6 animate-slide-in-up pb-16">
+                        <div className="card p-5 flex items-center gap-3 justify-center text-center"><div className="w-10 h-10 rounded-xl bg-yellow-100 flex items-center justify-center"><Icon name="lightbulb" size={20} className="text-yellow-600" /></div><h2 className="text-xl font-bold text-slate-800">💡 רעיונות</h2></div>
+                        <div className="card p-5 border-t-[3px] border-yellow-400">
+                            <div className="space-y-3">
+                                <textarea value={newIdeaText} onChange={e=>setNewIdeaText(e.target.value)} placeholder="כתבי את הרעיון שלך..." className="w-full p-3 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm resize-none" rows={3} />
+                                <div className="flex items-center gap-2 flex-wrap"><span className="text-xs font-bold text-slate-600">בחרי צבע:</span>{['yellow','green','blue','purple','pink','orange','red','gray'].map(color=>{const bgMap={yellow:'bg-yellow-200',green:'bg-green-200',blue:'bg-blue-200',purple:'bg-purple-200',pink:'bg-pink-200',orange:'bg-orange-200',red:'bg-red-200',gray:'bg-gray-200'};const bMap={yellow:'border-yellow-500',green:'border-green-500',blue:'border-blue-500',purple:'border-purple-500',pink:'border-pink-500',orange:'border-orange-500',red:'border-red-500',gray:'border-gray-500'};const nMap={yellow:'border-yellow-300',green:'border-green-300',blue:'border-blue-300',purple:'border-purple-300',pink:'border-pink-300',orange:'border-orange-300',red:'border-red-300',gray:'border-gray-300'};return <button key={color} onClick={()=>setNewIdeaColor(color)} className={`w-10 h-10 rounded-lg ${bgMap[color]} border-2 transition-all ${newIdeaColor===color?`${bMap[color]} scale-110`:nMap[color]}`}></button>;})}
+                                </div>
+                                <button onClick={addNewIdea} className="w-full bg-yellow-500 text-white py-2.5 rounded-xl font-semibold text-sm hover:bg-yellow-600 transition-all">הוסף רעיון</button>
+                            </div>
+                        </div>
+                        {ideas.length>0&&(<div className="card p-4"><div className="flex items-center gap-2 flex-wrap"><span className="text-xs font-bold text-slate-600 ml-2">סינון:</span><button onClick={()=>setIdeasFilter('all')} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${ideasFilter==='all'?'bg-slate-700 text-white':'bg-slate-100 text-slate-600'}`}>הכל ({ideas.length})</button>{['yellow','green','blue','purple','pink','orange','red','gray'].map(color=>{const cnt=ideas.filter(i=>i.color===color).length;if(!cnt)return null;const cMap={yellow:'bg-yellow-200 text-yellow-800',green:'bg-green-200 text-green-800',blue:'bg-blue-200 text-blue-800',purple:'bg-purple-200 text-purple-800',pink:'bg-pink-200 text-pink-800',orange:'bg-orange-200 text-orange-800',red:'bg-red-200 text-red-800',gray:'bg-gray-200 text-gray-800'};return <button key={color} onClick={()=>setIdeasFilter(color)} className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${ideasFilter===color?'ring-2 ring-offset-2 ring-slate-400':''} ${cMap[color]}`}>{cnt}</button>;})}</div></div>)}
+                        {ideas.length>0?(<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{ideas.filter(idea=>ideasFilter==='all'||idea.color===ideasFilter).map(idea=>{const colors=ideaColorMap[idea.color]||ideaColorMap.yellow;return(<div key={idea.id} className={`card ${colors.bg} border-2 ${colors.border} p-4 group`}><div className="flex items-start justify-between mb-3"><div className={`w-3 h-3 rounded-full ${colors.dot}`}></div><button onClick={()=>removeIdea(idea.id)} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-rose-500 transition-all"><Icon name="trash-2" size={14}/></button></div><textarea value={idea.text} onChange={e=>updateIdeaText(idea.id,e.target.value)} className={`w-full ${colors.bg} border-none outline-none text-sm font-medium ${colors.text} resize-none leading-relaxed mb-3`} rows={4}/><div className="flex items-center justify-between pt-3 border-t border-slate-200"><span className="text-[10px] text-slate-500">{idea.date}</span><div className="flex gap-1">{['yellow','green','blue','purple','pink','orange','red','gray'].map(color=><button key={color} onClick={()=>updateIdeaColor(idea.id,color)} className={`w-5 h-5 rounded-full ${ideaColorMap[color].dot} transition-all ${idea.color===color?'ring-2 ring-offset-1 ring-slate-400':'opacity-30 hover:opacity-70'}`}/>)}</div></div></div>);})}</div>):(<div className="card p-12 text-center"><span className="text-4xl mb-4 block">💡</span><p className="text-slate-400 font-medium text-sm">עדיין אין רעיונות</p></div>)}
+                    </div>
+                )}
+
+                {/* RESOURCES */}
+                {activeTab === 'resources' && (
+                    <div className="max-w-5xl mx-auto space-y-6 animate-slide-in-up pb-16">
+                        <div className="flex items-center justify-center gap-2"><span className="text-2xl">🌐</span><h2 className="text-xl font-bold text-slate-800">ספריית המשאבים שלי</h2></div>
+                        <div className="card p-5 border-t-[3px] border-emerald-400"><div className="space-y-2.5"><input type="text" value={newResourceTitle} onChange={e=>setNewResourceTitle(e.target.value)} placeholder="שם המשאב..." className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm" /><input type="text" value={newResourceUrl} onChange={e=>setNewResourceUrl(e.target.value)} placeholder="קישור URL..." className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-sm" /><select value={newResourceDomain} onChange={e=>setNewResourceDomain(e.target.value)} className="w-full p-2.5 bg-slate-50 border border-slate-100 rounded-xl outline-none text-xs font-medium cursor-pointer">{domains.map(d=><option key={d.id} value={d.value}>{d.emoji} {d.label}</option>)}</select><button onClick={addNewResource} className="w-full bg-emerald-500 text-white py-2 rounded-xl font-semibold text-xs hover:bg-emerald-600 transition-all">הוסף משאב</button></div></div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">{resources.map(resource=><div key={resource.id} className="card p-5 flex flex-col group"><div className="flex justify-between items-start mb-3"><button onClick={()=>toggleResource(resource.id)} className="w-9 h-9 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-indigo-500 transition-all">{resource.completed?<Icon name="check-circle-2" size={18} className="text-emerald-500"/>:<Icon name="link" size={18}/>}</button><div className="flex items-center gap-2"><span className="text-xl animate-float">{resource.emoji}</span><button onClick={()=>deleteResource(resource.id)} className="opacity-0 group-hover:opacity-100 w-7 h-7 rounded-lg bg-rose-50 hover:bg-rose-100 flex items-center justify-center text-rose-500 transition-all"><Icon name="trash-2" size={14}/></button></div></div><h3 className={`text-sm font-bold mb-3 leading-relaxed ${resource.completed?'text-slate-400 line-through':'text-slate-700'}`}>{resource.title}</h3><div className="mt-auto pt-3 border-t border-slate-50"><a href={resource.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-indigo-500 font-semibold text-xs hover:text-indigo-700 transition-colors"><Icon name="external-link" size={13}/>פתח משאב</a></div></div>)}</div>
+                    </div>
+                )}
+
+                {/* ARCHIVE */}
+                {activeTab === 'archive' && (
+                    <div className="max-w-4xl mx-auto space-y-6 animate-slide-in-up pb-16">
+                        <div className="card p-5 flex items-center justify-between flex-wrap gap-3"><div className="flex items-center gap-3"><div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center"><Icon name="trash-2" size={20} className="text-slate-600"/></div><div><h2 className="text-xl font-bold text-slate-800">🗑️ סל מחזור</h2><p className="text-slate-400 text-[10px] mt-0.5">כל הפריטים שנמחקו - ניתן לשחזר</p></div></div><div className="flex items-center gap-3"><span className="text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1 rounded-full">{archive.length} פריטים</span>{archive.length>0&&<button onClick={clearArchive} className="text-xs font-semibold text-rose-400 hover:text-rose-600 transition-all flex items-center gap-1"><Icon name="trash-2" size={13}/>רוקן</button>}</div></div>
+                        {archive.length===0?(<div className="card p-12 text-center"><span className="text-4xl mb-4 block">🗑️</span><p className="text-slate-400 font-medium text-sm">סל המחזור ריק</p></div>):(<div className="space-y-2">{archive.map(item=>(
+                            item.type==='schedule'?(<div key={item.id} className="card p-4"><div className="flex items-center gap-3"><div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-amber-100"><Icon name="calendar-clock" size={15} className="text-amber-600"/></div><div className="flex-1 min-w-0"><p className="text-sm font-semibold text-slate-700">{item.text}</p></div><button onClick={()=>setArchive(prev=>prev.filter(a=>a.id!==item.id))} className="shrink-0 px-3 py-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-xs font-semibold transition-all flex items-center gap-1"><Icon name="trash-2" size={12}/>מחק</button></div></div>):(<div key={item.id} className="card p-4 flex items-center gap-3"><div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${item.type==='gamechanger'?'bg-violet-100':item.type==='resource'?'bg-indigo-100':item.type==='project'?'bg-purple-100':item.type==='idea'?'bg-yellow-100':'bg-emerald-100'}`}><Icon name={item.type==='gamechanger'?'zap':item.type==='resource'?'link':item.type==='project'?'folder':item.type==='idea'?'lightbulb':'check'} size={15} className={item.type==='gamechanger'?'text-violet-600':item.type==='resource'?'text-indigo-600':item.type==='project'?'text-purple-600':item.type==='idea'?'text-yellow-600':'text-emerald-600'}/></div><div className="flex-1 min-w-0"><p className="text-sm font-semibold text-slate-700 truncate">{item.text}</p><span className={`pill ${item.type==='gamechanger'?'bg-violet-100 text-violet-600':item.type==='resource'?'bg-indigo-100 text-indigo-600':item.type==='project'?'bg-purple-100 text-purple-600':item.type==='idea'?'bg-yellow-100 text-yellow-600':'bg-emerald-100 text-emerald-600'}`}>{item.type==='gamechanger'?'⚡ Game Changer':item.type==='resource'?'🔗 משאב':item.type==='project'?'📂 פרויקט':item.type==='idea'?'💡 רעיון':'✅ משימה'}</span></div><button onClick={()=>restoreFromArchive(item)} className="shrink-0 px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-semibold transition-all flex items-center gap-1"><Icon name="undo-2" size={12}/>שחזר</button><button onClick={()=>setArchive(prev=>prev.filter(a=>a.id!==item.id))} className="shrink-0 px-2 py-1.5 bg-rose-100 hover:bg-rose-200 text-rose-600 rounded-lg text-xs font-semibold transition-all"><Icon name="x" size={12}/></button><div className="text-left shrink-0"><p className="text-[10px] font-bold text-slate-400">{item.date}</p></div></div>)
+                        ))}</div>)}
+                    </div>
+                )}
+
+                <footer className="max-w-5xl mx-auto mt-14 pt-6 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-4 text-slate-400 pb-8">
+                    <div className="flex items-center gap-2.5"><div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center text-[9px] font-bold text-white">Me</div><span className="text-sm font-medium italic text-slate-400">"הכל מתחיל מבפנים החוצה." ✨</span></div>
+                    <div className="font-medium flex items-center gap-2 text-slate-400 bg-white/80 px-3.5 py-1.5 rounded-full border border-slate-100 text-[11px]"><Icon name="calendar" size={13} className="text-violet-400" />2026</div>
+                </footer>
+            </div>
+        );
+    };
+
+    const root = createRoot(document.getElementById('root'));
+    root.render(<App />);
+</script>
+</body>
+</html>
